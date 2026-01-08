@@ -17,9 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.logan.vera.utils.TimerLock // Matches your 'utils' folderimport androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -46,6 +49,7 @@ fun ReaderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
     val listState = rememberLazyListState()
+    val context = LocalContext.current // <--- ADD THIS LINE HERE
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var isInitialized by remember { mutableStateOf(false) }
@@ -127,6 +131,10 @@ fun ReaderScreen(
                                 viewModel.saveReadingProgress(position)
                                 onNavigateUp()
                             }
+                        },
+                        onTimerClick = {
+                        TimerLock.setLockDuration(context, 15)
+                        TimerLock.resetAccumulatedTime(context)
                         }
                     )
                 }

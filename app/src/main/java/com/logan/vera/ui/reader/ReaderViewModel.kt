@@ -13,7 +13,7 @@ import com.logan.vera.epub.utils.EpubImageData
 import com.logan.vera.ui.theme.Fonts
 import com.logan.vera.ui.theme.ReaderTheme
 import com.logan.vera.utils.PreferencesManager
-import com.logan.vera.util.TimerLock // Added this import - double check this package path!
+import com.logan.vera.utils.TimerLock // Added this import - double check this package path!
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -41,24 +41,33 @@ class ReaderViewModel @Inject constructor(
     val chapters = _chapters.asStateFlow()
 
     init {
-        // temp
-        TimerLock.setLockDuration(context, 1) 
 
         loadBook()
         startFocusTimer() 
+
     }
 
     private fun startFocusTimer() {
-    viewModelScope.launch {
-        // This 'while' loop runs as long as this screen is alive
-        while (true) {
-            checkLockStatus()
+        viewModelScope.launch {
             
-            // Wait for 30 seconds before checking again
-            // This doesn't freeze the app because it's in a Coroutine
-            kotlinx.coroutines.delay(60 * 1000) 
+            // This 'while' loop runs as long as this screen is alive
+            val tickrate = 5 * 1000L
+            val read_time = 60 * 15 * 1000L
+            val lock_time = 1
+            while (true) {
+                checkLockStatus()
+                kotlinx.coroutines.delay(tickrate) 
+                if (!TimerLock.isLocked(context)){
+                    TimerLock.addReadingTime(context,tickrate)
+                    if (TimerLock.getAccumulatedTime(context) >= read_time){
+                        TimerLock.resetAccumulatedTime(context)
+                        TimerLock.setLockDuration(context,lock_time)
+                        }
+                    }
+
+                
+                }
             }
-        }
     }
 
     fun checkLockStatus() {
