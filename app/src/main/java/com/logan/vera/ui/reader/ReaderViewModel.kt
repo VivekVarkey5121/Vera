@@ -1,5 +1,6 @@
 package com.logan.vera.ui.reader
 
+import android.content.Context // Added this import
 import android.util.Log
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.SavedStateHandle
@@ -12,6 +13,7 @@ import com.logan.vera.epub.utils.EpubImageData
 import com.logan.vera.ui.theme.Fonts
 import com.logan.vera.ui.theme.ReaderTheme
 import com.logan.vera.utils.PreferencesManager
+import com.logan.vera.util.TimerLock // Added this import - double check this package path!
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,6 +26,7 @@ private const val TAG = "ReaderViewModel"
 class ReaderViewModel @Inject constructor(
     private val repository: BookRepository,
     private val preferencesManager: PreferencesManager,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context, 
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val bookId: String = checkNotNull(savedStateHandle["bookId"])
@@ -38,8 +41,31 @@ class ReaderViewModel @Inject constructor(
     val chapters = _chapters.asStateFlow()
 
     init {
+        // temp
+        TimerLock.setLockDuration(context, 1) 
+
         loadBook()
+        startFocusTimer() 
     }
+
+    private fun startFocusTimer() {
+    viewModelScope.launch {
+        // This 'while' loop runs as long as this screen is alive
+        while (true) {
+            checkLockStatus()
+            
+            // Wait for 30 seconds before checking again
+            // This doesn't freeze the app because it's in a Coroutine
+            kotlinx.coroutines.delay(60 * 1000) 
+            }
+        }
+    }
+
+    fun checkLockStatus() {
+        val locked = TimerLock.isLocked(context)
+        _uiState.update { it.copy(isLocked = locked) }
+    }
+
 
     fun getImageData(imagePath: String): EpubImageData? {
         return epubImages[imagePath]?.let { 
@@ -169,7 +195,9 @@ data class ReaderUiState(
     val theme: ReaderTheme = ReaderTheme.LIGHT,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val coverImage: EpubImageData? = null
+    val coverImage: EpubImageData? = null,
+    val isLocked: Boolean = false 
+
 )
 
 data class ReadingPosition(

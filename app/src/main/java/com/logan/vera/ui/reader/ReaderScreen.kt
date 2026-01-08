@@ -151,9 +151,30 @@ fun ReaderScreen(
                     }
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (uiState.isLocked) { // timer lock
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Focus Lock Active", 
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Take a break.",
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(onClick = {
+                            val message = "You have ${TimerLock.getRemainingSeconds(context)} seconds left"
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("Check Timer")
+                        }
+                    }
                 } else {
                     uiState.error?.let { error ->
                         Text(
