@@ -20,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.logan.vera.utils.TimerLock // Matches your 'utils' folder
@@ -55,6 +57,7 @@ fun ReaderScreen(
     val coroutineScope = rememberCoroutineScope()
     var isInitialized by remember { mutableStateOf(false) }
     var showBars by remember { mutableStateOf(true) }
+    var horizontalDragOffset by remember { mutableStateOf(0f) }  // for the chapter drag
     val coverHeight = 300.dp
 
     // System UI controller
@@ -111,7 +114,38 @@ fun ReaderScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        // Logic for when the finger is lifted
+                        val threshold = 200 // How many pixels they must swipe to trigger a change
+                        
+                        if (horizontalDragOffset > threshold) {
+                            // Swiped Right (Go to Previous Chapter)
+                            val prevChapter = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0)
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(prevChapter)
+                            }
+                        } else if (horizontalDragOffset < -threshold) {
+                            // Swiped Left (Go to Next Chapter)
+                            val nextChapter = (listState.firstVisibleItemIndex + 1).coerceAtMost(chapters.size - 1)
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(nextChapter)
+                            }
+                        }
+                        // Reset the tracker for the next time
+                        horizontalDragOffset = 0f
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume() // Tell the system we are handling this touch
+                        horizontalDragOffset += dragAmount // Accumulate the movement
+                    }
+                )
+            }
+    ) {
         Scaffold(
             topBar = {
                 AnimatedVisibility(
