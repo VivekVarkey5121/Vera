@@ -21,6 +21,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.logan.vera.ui.theme.Fonts
 import com.logan.vera.ui.theme.ReaderTheme
 
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.logan.vera.utils.TimerLock
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -133,6 +137,52 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+            // timer lock settings
+            item {
+                SettingsCard(title = "App Timer") {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        
+                        // Reading Limit Field
+                        OutlinedTextField(
+                            value = uiState.readLimitMins.toString(),
+                            onValueChange = { newValue ->
+                                // Only update if the user typed a valid number
+                                newValue.toIntOrNull()?.let { viewModel.updateReadLimit(it) }
+                            },
+                            label = { Text("Reading Limit (Minutes)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Lock Duration Field
+                        OutlinedTextField(
+                            value = uiState.lockDurationMins.toString(),
+                            onValueChange = { newValue ->
+                                newValue.toIntOrNull()?.let { viewModel.updateLockDuration(it) }
+                            },
+                            label = { Text("Lock Duration (Minutes)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        // Force Lock Duration Field
+                        OutlinedTextField(
+                            value = uiState.forceLockMins.toString(),
+                            onValueChange = { newValue ->
+                                newValue.toIntOrNull()?.let { viewModel.updateForceLock(it) }
+                            },
+                            label = { Text("Forced Lock Duration (Minutes)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Text(
+                            text = "The app will lock after you've read for the limit specified.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

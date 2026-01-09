@@ -23,17 +23,25 @@ fun ExploreScreen(
     val context = LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
+        contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Get the file name from the URI
             val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                 cursor.moveToFirst()
                 cursor.getString(nameIndex)
             } ?: "Unknown"
-            
-            viewModel.addBookFromUri(uri, fileName)
+
+            if (fileName.lowercase().endsWith(".epub")) {
+                viewModel.addBookFromUri(uri, fileName)
+            } else {
+                // Show a toast if they picked a non-epub file
+                android.widget.Toast.makeText(
+                    context, 
+                    "Please select a valid .epub file", 
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
@@ -44,7 +52,7 @@ fun ExploreScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            launcher.launch(arrayOf("application/epub+zip"))
+                            launcher.launch("*/*")
                         }
                     ) {
                         Icon(
@@ -107,7 +115,7 @@ fun ExploreScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 FilledTonalButton(
                     onClick = {
-                        launcher.launch(arrayOf("application/epub+zip"))
+                        launcher.launch("*/*")
                     }
                 ) {
                     Icon(
