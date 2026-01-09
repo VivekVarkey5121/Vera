@@ -8,24 +8,35 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import com.logan.vera.utils.TimerLock
+import android.content.Context 
 
 data class SettingsUiState(
     val isDarkMode: Boolean = false,
     val fontSize: Float = 16f,
     val selectedFont: FontFamily,
-    val selectedTheme: ReaderTheme
+    val selectedTheme: ReaderTheme,
+    val readLimitMins: Int = 15,
+    val lockDurationMins: Int = 5,
+    val forceLockMins: Int = 15
+
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         SettingsUiState(
             isDarkMode = preferencesManager.isDarkMode,
             fontSize = preferencesManager.fontSize,
             selectedFont = preferencesManager.fontFamily,
-            selectedTheme = preferencesManager.theme
+            selectedTheme = preferencesManager.theme,
+
+            readLimitMins = TimerLock.getReadLimitMins(context),
+            lockDurationMins = TimerLock.getLockDurationMins(context),
+            forceLockMins = TimerLock.getForceLockMins(context)
         )
     )
     val uiState = _uiState.asStateFlow()
@@ -49,5 +60,20 @@ class SettingsViewModel @Inject constructor(
     fun updateTheme(theme: ReaderTheme) {
         preferencesManager.theme = theme
         _uiState.value = _uiState.value.copy(selectedTheme = theme)
+    }
+
+    fun updateReadLimit(mins: Int) {
+        TimerLock.setReadLimitMins(context, mins)
+        _uiState.value = _uiState.value.copy(readLimitMins = mins)
+    }
+
+    fun updateLockDuration(mins: Int) {
+        TimerLock.setLockDurationMins(context, mins)
+        _uiState.value = _uiState.value.copy(lockDurationMins = mins)
+    }
+
+    fun updateForceLock(mins: Int) {
+        TimerLock.setForceLockMins(context, mins)
+        _uiState.value = _uiState.value.copy(forceLockMins = mins)
     }
 }

@@ -133,7 +133,7 @@ fun ReaderScreen(
                             }
                         },
                         onTimerClick = {
-                        TimerLock.setLockDuration(context, 15)
+                        TimerLock.setLockDuration(context, TimerLock.getForceLockMins(context))
                         TimerLock.resetAccumulatedTime(context)
                         }
                     )
