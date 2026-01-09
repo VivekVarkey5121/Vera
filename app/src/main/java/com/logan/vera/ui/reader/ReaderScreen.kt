@@ -133,9 +133,14 @@ fun ReaderScreen(
                             }
                         },
                         onTimerClick = {
-                        TimerLock.setLockDuration(context, TimerLock.getForceLockMins(context))
-                        TimerLock.resetAccumulatedTime(context)
+                            TimerLock.setLockDuration(context, TimerLock.getForceLockMins(context))
+                            TimerLock.resetAccumulatedTime(context)
+                        },
+                        onTimeLeftClick = {
+                            val message = "You have been reading for ${TimerLock.formatMillis(TimerLock.getAccumulatedTime(context))}"
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }
+
                     )
                 }
             }
@@ -177,7 +182,7 @@ fun ReaderScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(onClick = {
-                            val message = "You have ${TimerLock.getRemainingSeconds(context)} seconds left"
+                            val message = "You have ${TimerLock.formatMillis(TimerLock.getRemainingSeconds(context))} left"
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }) {
                             Text("Check Timer")
@@ -244,6 +249,8 @@ fun ReaderScreen(
         }
     }
 }
+
+
 
 @Composable
 private fun ChapterContent(

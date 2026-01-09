@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Lock
 fun ReaderTopBar(
     title: String,
     onNavigateUp: () -> Unit,
+    onTimeLeftClick: () -> Unit,
     onTimerClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -33,11 +34,18 @@ fun ReaderTopBar(
                 )
             }
         },
+
         actions = {
             IconButton(onClick = onTimerClick) {
                 Icon(
                     imageVector = Icons.Default.Lock, 
                     contentDescription = "Lock App"
+                )
+            }
+            IconButton(onClick = onTimeLeftClick) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "time remaining"
                 )
             }
         },

@@ -35,7 +35,7 @@ object TimerLock {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lockUntil = prefs.getLong(KEY_LOCK_UNTIL, 0)
         val diff = lockUntil - System.currentTimeMillis()
-        return if (diff > 0) diff / 1000 else 0
+        return if (diff > 0) diff else 0
     }
 
 
@@ -90,5 +90,16 @@ object TimerLock {
     fun setForceLockMins(context: Context, minutes: Int) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putLong(KEY_FORCE_LOCK, minutes.toLong()).apply()
+    }
+
+    // Inside TimerLock object
+    fun formatMillis(millis: Long): String {
+        
+        val totalSeconds = millis / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        
+        // This formats the numbers to always have 2 digits (e.g., 05 instead of 5)
+        return "%d:%02d".format(minutes, seconds)
     }
 }

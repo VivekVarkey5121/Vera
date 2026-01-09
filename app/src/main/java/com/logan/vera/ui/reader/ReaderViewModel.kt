@@ -48,12 +48,11 @@ class ReaderViewModel @Inject constructor(
     }
 
     private fun startFocusTimer() {
-        viewModelScope.launch {
-            
+ ./gradlew assembleDebug            
             // This 'while' loop runs as long as this screen is alive
             val tickrate = 5 * 1000L
-            val read_time = 60 * 15 * 1000L
-            val lock_time = 1
+            val read_time = TimerLock.getReadLimitMins(context) * 60 * 1000L
+            val lock_time = TimerLock.getLockDurationMins(context)
             while (true) {
                 checkLockStatus()
                 kotlinx.coroutines.delay(tickrate) 
