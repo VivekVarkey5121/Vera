@@ -4,5 +4,4 @@ app/build/
 local.properties
 captures/
 .externalNativeBuild/
-Open_My_Eyes.epub
-The_Collector.epub
+*.epub
