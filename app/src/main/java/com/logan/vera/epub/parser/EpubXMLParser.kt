@@ -59,7 +59,7 @@ class EpubXMLParser(
     }
 
     private fun handleTextNode(node: TextNode): String {
-        return node.wholeText 
+        return node.text() 
     }
 
     private fun handleElement(element: Element): String {

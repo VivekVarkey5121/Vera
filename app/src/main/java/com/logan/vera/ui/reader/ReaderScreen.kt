@@ -22,7 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
-import com.logan.vera.utils.TimerLock // Matches your 'utils' folderimport androidx.compose.ui.layout.ContentScale
+import com.logan.vera.utils.TimerLock // Matches your 'utils' folder
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -313,7 +313,7 @@ private fun ChapterContent(
                     
                     if (text.isNotEmpty()) {
                         Text(
-                            text = text,
+                            text = text.toAnnotatedString(),
                             fontSize = fontSize.sp,
                             lineHeight = (fontSize * 1.5).sp,
                             fontFamily = fontFamily,

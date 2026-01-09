@@ -22,7 +22,7 @@ class BookTextMapper {
 }
 
 fun String.toAnnotatedString(): androidx.compose.ui.text.AnnotatedString {
-    val regex = Regex("<i>(.*?)</i>|<b>(.*?)</b>|([^<]+)")
+    val regex = Regex("<i>(.*?)</i>|<b>(.*?)</b>|([^<]+)", RegexOption.DOT_MATCHES_ALL)
     return androidx.compose.ui.text.buildAnnotatedString {
         regex.findAll(this@toAnnotatedString).forEach { match ->
             when {
