@@ -17,6 +17,11 @@ enum class ReaderTheme(
         text = Color(0xFFE1E1E1),
         displayName = "Dark"
     ),
+    LITHIUMGREY(
+        background = Color(0xFF3A3B3B),
+        text = Color(0xFFC4C5C5),
+        displayName = "Lithium-grey"
+    ),
     SEPIA(
         background = Color(0xFFF8F1E3),
         text = Color(0xFF5B4636),

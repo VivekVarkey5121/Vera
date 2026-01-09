@@ -1,6 +1,6 @@
 package com.logan.vera.ui.reader
 
-import android.content.Context // Added this import
+import android.content.Context
 import android.util.Log
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.SavedStateHandle
@@ -48,7 +48,7 @@ class ReaderViewModel @Inject constructor(
     }
 
     private fun startFocusTimer() {
- ./gradlew assembleDebug            
+        viewModelScope.launch {
             // This 'while' loop runs as long as this screen is alive
             val tickrate = 5 * 1000L
             val read_time = TimerLock.getReadLimitMins(context) * 60 * 1000L

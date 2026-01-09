@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.logan.vera.data.models.ChapterModel
 import com.logan.vera.epub.utils.BookTextMapper
+import com.logan.vera.epub.utils.toAnnotatedString
 import com.logan.vera.ui.theme.ReaderTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -283,7 +284,7 @@ private fun ChapterContent(
         parts.forEachIndexed { index, part ->
             if (index == 0) {
                 Text(
-                    text = part,
+                    text = part.toAnnotatedString(),
                     fontSize = fontSize.sp,
                     lineHeight = (fontSize * 1.5).sp,
                     fontFamily = fontFamily,

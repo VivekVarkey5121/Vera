@@ -20,3 +20,26 @@ class BookTextMapper {
         }
     }
 }
+
+fun String.toAnnotatedString(): androidx.compose.ui.text.AnnotatedString {
+    val regex = Regex("<i>(.*?)</i>|<b>(.*?)</b>|([^<]+)")
+    return androidx.compose.ui.text.buildAnnotatedString {
+        regex.findAll(this@toAnnotatedString).forEach { match ->
+            when {
+                match.value.startsWith("<i>") -> {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
+                    append(match.groupValues[1])
+                    pop()
+                }
+                match.value.startsWith("<b>") -> {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold))
+                    append(match.groupValues[2])
+                    pop()
+                }
+                else -> {
+                    append(match.value)
+                }
+            }
+        }
+    }
+}

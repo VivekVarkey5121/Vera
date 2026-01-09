@@ -59,18 +59,18 @@ class EpubXMLParser(
     }
 
     private fun handleTextNode(node: TextNode): String {
-        val text = node.text().trim()
-        return if (text.isEmpty()) "" else text
+        return node.wholeText 
     }
 
     private fun handleElement(element: Element): String {
-        return when (element.tagName()) {
+        return when (element.tagName().lowercase()) {
             "p" -> handleParagraph(element)
             "br" -> "\n"
             "hr" -> "\n\n"
             "img", "image" -> handleImage(element)
-            else -> element.childNodes()
-                .joinToString("") { getNodeStructuredText(it) }
+            "i", "em" -> "<i>${element.childNodes().joinToString("") { getNodeStructuredText(it) }}</i>"
+            "b", "strong" -> "<b>${element.childNodes().joinToString("") { getNodeStructuredText(it) }}</b>"
+            else -> element.childNodes().joinToString("") { getNodeStructuredText(it) }
         }
     }
 
