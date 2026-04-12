@@ -1,8 +1,8 @@
 .gradle/
 build/
-node_modules
 app/build/
 local.properties
 captures/
 .externalNativeBuild/
 *.epub
+node_modules
