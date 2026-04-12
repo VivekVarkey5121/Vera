@@ -19,6 +19,8 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.logan.vera.data.database.entities.Tag
+import com.logan.vera.data.database.entities.BookTagCrossRef
 
 private const val TAG = "BookRepository"
 
@@ -36,6 +38,9 @@ class BookRepository @Inject constructor(
     }
 
     val allBooks: Flow<List<BookModel>> = bookDao.getAllBooks()
+        .map { books -> books.map { it.toModel() } }
+
+    val allBooksFilter: Flow<List<BookModel>> = bookDao.getAllBooksFilter()
         .map { books -> books.map { it.toModel() } }
 
     suspend fun addBookFromUri(uri: Uri, fileName: String): String {
@@ -125,6 +130,16 @@ class BookRepository @Inject constructor(
         val coverFile = File(booksDir, "$bookId.cover")
         coverFile.writeBytes(imageData)
         return coverFile.absolutePath
+    }
+
+    suspend fun deleteBooks(bookIds: List<String>) {
+        for (bookId in bookIds) {
+            deleteBook(bookId)
+        }
+    }
+
+    suspend fun deleteBookCover(bookId: String) {
+        bookDao.clearCoverPath(bookId)
     }
 
     suspend fun deleteBook(bookId: String) {
@@ -236,4 +251,40 @@ class BookRepository @Inject constructor(
         timeSpentReading = timeSpentReading,
         lastReadDate = lastReadDate
     )
+
+
+    fun getAllTags(): Flow<List<Tag>> = bookDao.getAllTags()
+
+    suspend fun addTagToBook(bookId: String, tagName: String) {
+        withContext(Dispatchers.IO) {
+            // 1. Check if tag exists or create it (lowercase to prevent duplicates)
+            val normalizedName = tagName.trim().lowercase()
+            val tagId = UUID.nameUUIDFromBytes(normalizedName.toByteArray()).toString()
+            
+            val tag = Tag(id = tagId, name = normalizedName)
+            bookDao.insertTag(tag)
+            
+            // 2. Link book to tag
+            bookDao.insertBookTagCrossRef(BookTagCrossRef(bookId, tagId))
+        }
+    }
+
+    suspend fun removeTagToBook(bookId: String, tagName: String) {
+        withContext(Dispatchers.IO) {
+            // 1. Check if tag exists or create it (lowercase to prevent duplicates)
+            val normalizedName = tagName.trim().lowercase()
+            val tagId = UUID.nameUUIDFromBytes(normalizedName.toByteArray()).toString()
+                        
+            // 2. Link book to tag
+            bookDao.deleteBookTagCrossRef(bookId, tagId)
+        }
+    }
+
+    // Search books by a specific tag name
+    fun getBooksWithTag(tagName: String): Flow<List<BookModel>> {
+        return bookDao.getBooksByTagName(tagName.trim().lowercase()).map { books ->
+            books.map { it.toModel() }
+        }
+    }
+    
 }

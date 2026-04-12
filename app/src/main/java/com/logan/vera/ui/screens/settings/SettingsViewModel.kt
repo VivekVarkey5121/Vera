@@ -36,7 +36,8 @@ class SettingsViewModel @Inject constructor(
 
             readLimitMins = TimerLock.getReadLimitMins(context),
             lockDurationMins = TimerLock.getLockDurationMins(context),
-            forceLockMins = TimerLock.getForceLockMins(context)
+            forceLockMins = TimerLock.getForceLockMins(context),
+            // dailyLockMins = TimerLock.getDailyLockMins(context)
         )
     )
     val uiState = _uiState.asStateFlow()
@@ -76,4 +77,9 @@ class SettingsViewModel @Inject constructor(
         TimerLock.setForceLockMins(context, mins)
         _uiState.value = _uiState.value.copy(forceLockMins = mins)
     }
+
+    //fun updateDailyLock(mins: Int) {
+        //TimerLock.setDailyLockMins(context, mins)
+        //_uiState.value = _uiState.value.copy(dailyLockMins = mins)
+    //}
 }

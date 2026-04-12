@@ -16,7 +16,7 @@ data class Book(
     val lastReadPosition: Float = 0f,
     val dateAdded: Long = System.currentTimeMillis(),
     val lastAccessed: Long = System.currentTimeMillis(),
-    // New fields for enhanced tracking
+
     val totalChapters: Int = 0,
     val readProgress: Float = 0f,
     val timeSpentReading: Long = 0,

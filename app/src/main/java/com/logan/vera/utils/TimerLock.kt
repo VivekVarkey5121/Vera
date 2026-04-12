@@ -1,6 +1,8 @@
 package com.logan.vera.utils
 
 import android.content.Context
+import java.time.LocalDate
+
 
 object TimerLock {
     private const val PREFS_NAME = "vera_focus_prefs"
@@ -12,8 +14,24 @@ object TimerLock {
     private const val KEY_READ_LIMIT = "read_lock_time"
     private const val KEY_LOCK_DURATION = "lock_duration_time"
     private const val KEY_FORCE_LOCK = "force_lock_duration_time" 
+    
+    private const val KEY_DAILY_LOCK_TIME = "daily_timer_duration_time"
+    private const val KEY_LAST_DATE = "key_last_date_accessed"
 
 
+
+
+
+
+    fun getDailyLockMins(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_DAILY_LOCK_TIME, 120).toInt()
+    }
+
+    fun setDailyLockMins(context: Context, minutes: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putLong(KEY_DAILY_LOCK_TIME, minutes.toLong()).apply()
+    }
 
 
     fun setLockDuration(context: Context, minutes: Int) {
@@ -43,11 +61,16 @@ object TimerLock {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val currentAccumulated = prefs.getLong(KEY_ACCUMULATED_TIME, 0)
         val currentTotal = prefs.getLong(KEY_TOTAL_TIME_READ, 0)
+        // val last_date_accessed = prefs.get
         
         prefs.edit()
             .putLong(KEY_ACCUMULATED_TIME, currentAccumulated + millis)
             .putLong(KEY_TOTAL_TIME_READ, currentTotal + millis)
             .apply()
+    
+        //if ((currentTotal + millis) <= getDailyLockMins(context) * 60 * 1000) {
+        //    setLockDuration(context, 12 * 60 * 60)  //12 hours (is that too long?)
+        //}
     }
 
     fun getAccumulatedTime(context: Context): Long {
@@ -92,14 +115,12 @@ object TimerLock {
         prefs.edit().putLong(KEY_FORCE_LOCK, minutes.toLong()).apply()
     }
 
-    // Inside TimerLock object
     fun formatMillis(millis: Long): String {
         
         val totalSeconds = millis / 1000
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
         
-        // This formats the numbers to always have 2 digits (e.g., 05 instead of 5)
         return "%d:%02d".format(minutes, seconds)
     }
 }

@@ -167,6 +167,13 @@ fun SettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        Text(
+                            text = "The app will lock after you've read for the limit specified.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
                         // Force Lock Duration Field
                         OutlinedTextField(
                             value = uiState.forceLockMins.toString(),
@@ -177,12 +184,28 @@ fun SettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
                         Text(
-                            text = "The app will lock after you've read for the limit specified.",
+                            text = "Forces the app to lock for a specified time",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        // Daily Lock Duration Field
+                        //OutlinedTextField(
+                        //    value = uiState.dailyLockMins.toString(),
+                        //    onValueChange = { newValue ->
+                        //        newValue.toIntOrNull()?.let { viewModel.updateDailyLock(it) }
+                        //    },
+                        //    label = { Text("Daily Limit (Minutes)") },
+                        //    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        //    modifier = Modifier.fillMaxWidth()
+                        //)
+                        //Text(
+                        //    text = "Locks app after time specified per day",
+                        //    style = MaterialTheme.typography.bodySmall,
+                        //    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        //)
+                        
                     }
                 }
             }

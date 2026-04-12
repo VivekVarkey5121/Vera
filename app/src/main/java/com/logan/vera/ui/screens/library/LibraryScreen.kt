@@ -14,18 +14,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.logan.vera.ui.components.BookCard
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.* 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import android.util.Log
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryScreen(
     onBookClick: (String) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
-    val books by viewModel.books.collectAsState(initial = emptyList())
+    val selectedBooks = viewModel.selectedBooks
+    val inSelectMode = selectedBooks.isNotEmpty()
+    val books by viewModel.filteredBooks.collectAsState(initial = emptyList())
+    
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var menuExpanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var searchActive by remember { mutableStateOf(false) }
+
+    var showTagDialog by remember { mutableStateOf(false) }
+    var tagName by remember { mutableStateOf("") }
 
     // Sort books with last accessed first
     val sortedBooks = remember(books) {
@@ -63,7 +80,81 @@ fun LibraryScreen(
     )
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = { 
+            if (inSelectMode){
+                TopAppBar(
+                    title = { Text("${selectedBooks .size} Selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.clearSelection() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear Selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.deleteSelected() }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        } 
+
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More")
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Add Tag") },
+                                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = {
+                                        showTagDialog = true
+                                        Log.d("Library", "Dialog state: $showTagDialog")
+                                        menuExpanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Remove Cover") },
+                                    //leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        viewModel.deleteBookCover()
+                                    }
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                )
+            }else{
+                SearchBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (searchActive) 0.dp else 16.dp),
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it; viewModel.onSearchQueryChanged(it) },
+                    onSearch = { searchActive = false },
+                    active = false,
+                    onActiveChange = { searchActive = it; if (it == false){searchQuery = ""; viewModel.onSearchQueryChanged("") }},
+                    placeholder = { Text("Search your library...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchActive) {
+                            IconButton(onClick = { 
+                                if (searchQuery.isNotEmpty()) searchQuery = "" else searchActive = false;viewModel.onSearchQueryChanged("")
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close search")
+                            }
+                        }
+                    }
+                ) {
+                    // This is the "suggestions" area that shows when the search bar is active
+                    // You can leave it empty or show recent searches
+                }
+            }
+        }
+
     ) { padding ->
         if (books.isEmpty()) {
             Box(
@@ -87,17 +178,94 @@ fun LibraryScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                items(
-                    items = sortedBooks,
-                    key = { it.id }
-                ) { book ->
-                    BookCard(
-                        book = book,
-                        onClick = { onBookClick(book.id) },
-                        modifier = Modifier.fillMaxWidth()
+            items(sortedBooks, key = { it.id }) { book ->
+                val isSelected = selectedBooks .contains(book.id)
+                
+                BookCard(
+                    book = book,
+                    isSelected = isSelected, // Pass the state down
+                    modifier = Modifier.combinedClickable(
+                        onClick = {
+                            if (inSelectMode) {
+                                viewModel.toggleSelection(book.id)
+                            } else {
+                                onBookClick(book.id)
+                            }
+                        },
+                        onLongClick = {
+                            viewModel.toggleSelection(book.id)
+                            }
+                        )
                     )
                 }
             }
         }
+        if (showTagDialog) {
+            AlertDialog(
+                onDismissRequest = { 
+                    showTagDialog = false
+                    tagName = "" 
+                },
+                title = { Text("Add Tag") },
+                text = {
+                    OutlinedTextField(
+                        value = tagName,
+                        onValueChange = { tagName = it },
+                        label = { Text("Tag") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // REMOVE BUTTON
+                        TextButton(
+                            onClick = {
+                                if (tagName.isNotBlank()) {
+                                    viewModel.removeBookTag(tagName) 
+                                    showTagDialog = false
+                                    tagName = ""
+                                }
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error // Red color for removal
+                            )
+                        ) {
+                            Text("Remove")
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // ADD BUTTON
+                        Button(
+                            onClick = {
+                                if (tagName.isNotBlank()) {
+                                    viewModel.addBookTag(tagName)
+                                    showTagDialog = false
+                                    tagName = ""
+                                }
+                            }
+                        ) {
+                            Text("Add")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { 
+                        showTagDialog = false
+                        tagName = ""
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
+
+
+
 }
