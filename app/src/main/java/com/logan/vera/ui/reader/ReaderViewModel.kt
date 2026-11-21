@@ -48,7 +48,6 @@ class ReaderViewModel @Inject constructor(
     }
 
     private fun startFocusTimer() {
- ./gradlew assembleDebug            
             // This 'while' loop runs as long as this screen is alive
             val tickrate = 5 * 1000L
             val read_time = TimerLock.getReadLimitMins(context) * 60 * 1000L
