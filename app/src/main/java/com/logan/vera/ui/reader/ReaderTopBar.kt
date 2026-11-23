@@ -1,7 +1,8 @@
 package com.logan.vera.ui.reader
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ fun ReaderTopBar(
     onNavigateUp: () -> Unit,
     onTimeLeftClick: () -> Unit,
     onTimerClick: () -> Unit,
+    onReturnToTopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -29,7 +31,7 @@ fun ReaderTopBar(
         navigationIcon = {
             IconButton(onClick = onNavigateUp) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Navigate back"
                 )
             }
@@ -40,6 +42,12 @@ fun ReaderTopBar(
                 Icon(
                     imageVector = Icons.Default.Lock, 
                     contentDescription = "Lock App"
+                )
+            }
+            IconButton(onClick = onReturnToTopClick) {
+                Icon(
+                    imageVector = Icons.Default.ArrowUpward,
+                    contentDescription = "return to top"
                 )
             }
             IconButton(onClick = onTimeLeftClick) {

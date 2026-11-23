@@ -52,7 +52,7 @@ fun ReaderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
     val listState = rememberLazyListState()
-    val context = LocalContext.current // <--- ADD THIS LINE HERE
+    val context = LocalContext.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var isInitialized by remember { mutableStateOf(false) }
@@ -174,6 +174,11 @@ fun ReaderScreen(
                         onTimeLeftClick = {
                             val message = "You have been reading for ${TimerLock.formatMillis(TimerLock.getAccumulatedTime(context))}"
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        },
+                        onReturnToTopClick = {
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(0)
+                            }
                         }
 
                     )

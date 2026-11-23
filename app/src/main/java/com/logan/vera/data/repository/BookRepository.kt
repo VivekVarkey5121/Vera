@@ -60,7 +60,12 @@ class BookRepository @Inject constructor(
         }
     }
 
-    suspend fun addBook(fileBytes: ByteArray, fileName: String): String {
+    suspend fun returnBookByID(bookId: String): Book? {
+        val book = bookDao.getBook(bookId)
+        return book
+    }
+
+    suspend fun addBook(fileBytes: ByteArray, fileName: String, customFilename: String? = null): String {
         return withContext(Dispatchers.IO) {
             val bookId = UUID.randomUUID().toString()
             val bookFile = File(booksDir, "$bookId.epub")
@@ -99,7 +104,7 @@ class BookRepository @Inject constructor(
 
                 val book = Book(
                     id = bookId,
-                    title = epubBook.title.ifEmpty { fileName },
+                    title = customFilename ?: epubBook.title.ifEmpty { fileName },
                     author = epubBook.author,
                     description = epubBook.description,
                     coverPath = coverPath,

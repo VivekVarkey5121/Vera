@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import android.util.Log
+import android.widget.Toast
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -120,6 +121,16 @@ fun LibraryScreen(
                                         viewModel.deleteBookCover()
                                     }
                                 )
+                                DropdownMenuItem(
+                                    text = { Text("Translate") },
+                                    //leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        val message = "translating"
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        viewModel.translateBook()
+                                    }
+                                )
                             }
                         }
                     },
@@ -131,6 +142,7 @@ fun LibraryScreen(
                 SearchBar(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .padding(horizontal = if (searchActive) 0.dp else 16.dp),
                     query = searchQuery,
                     onQueryChange = { searchQuery = it; viewModel.onSearchQueryChanged(it) },
@@ -160,7 +172,8 @@ fun LibraryScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(padding)
+                    .consumeWindowInsets(padding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -177,6 +190,7 @@ fun LibraryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .consumeWindowInsets(padding)
             ) {
             items(sortedBooks, key = { it.id }) { book ->
                 val isSelected = selectedBooks .contains(book.id)

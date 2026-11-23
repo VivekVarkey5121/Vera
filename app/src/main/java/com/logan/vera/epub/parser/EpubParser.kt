@@ -154,7 +154,7 @@ class EpubParser {
                 }
         }
 
-        private fun parseTableOfContents(ncxFile: EpubFile, rootPath: String): List<ToCEntry> {
+        internal fun parseTableOfContents(ncxFile: EpubFile, rootPath: String): List<ToCEntry> {
             try {
                 // First try parsing as XML
                 val element = parseXMLFile(ncxFile.data)
@@ -286,7 +286,7 @@ class EpubParser {
             chapters
         }
 
-        private fun isChapter(item: ManifestItem): Boolean {
+        internal fun isChapter(item: ManifestItem): Boolean {
             val extension = item.absPath.substringAfterLast('.').lowercase()
             return extension in listOf("xhtml", "xml", "html", "htm")
         }
@@ -327,7 +327,7 @@ class EpubParser {
             return (unlistedImages + listedImages).distinct().toList()
         }
 
-        private data class ManifestItem(
+        data class ManifestItem(
             val id: String,
             val absPath: String,
             val mediaType: String,

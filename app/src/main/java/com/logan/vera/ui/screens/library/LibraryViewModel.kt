@@ -1,6 +1,8 @@
 package com.logan.vera.ui.screens.library
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.logan.vera.data.models.BookModel
@@ -10,6 +12,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.platform.LocalContext
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.logan.vera.epub.parser.EpubTranslationWorker
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.map
@@ -21,8 +28,8 @@ private const val TAG = "LibraryViewModel"
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
-    private val repository: BookRepository
-) : ViewModel() {
+    private val repository: BookRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context) : ViewModel() {
     
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -118,6 +125,29 @@ class LibraryViewModel @Inject constructor(
                 clearSelection()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to add tag", e)
+            }
+        }
+    }
+
+
+
+    fun translateBook(){
+        viewModelScope.launch {
+            try {
+                val idsToTranslate = selectedBooks.toList()
+
+                for (id in idsToTranslate){
+                    val request = OneTimeWorkRequestBuilder<EpubTranslationWorker>()
+                        .setInputData(workDataOf("book_id" to id))
+                        .build()
+
+                    WorkManager.getInstance(context).enqueue(request)                }
+
+                clearSelection()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to translate", e)
+                Toast.makeText(context, "Failed to translate", Toast.LENGTH_SHORT).show()
+
             }
         }
     }

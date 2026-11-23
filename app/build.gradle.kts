@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.logan.vera"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.logan.vera"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -62,10 +62,11 @@ kapt {
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     // Version constants
     val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
     val roomVersion = "2.6.1"
-    val hiltVersion = "2.50"
+    val hiltVersion = "2.51.1"
     val lifecycleVersion = "2.7.0"
     val coroutinesVersion = "1.7.3"
 
@@ -97,7 +98,9 @@ dependencies {
     // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:$hiltVersion")
     kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Database - Room
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -114,6 +117,8 @@ dependencies {
     // Parsing
     implementation("org.jsoup:jsoup:1.17.2")
 
+    // Translation
+    implementation("com.google.mlkit:translate:17.0.3")
     // Testing (commented out)
     //testImplementation("junit:junit:4.13.2")
     //androidTestImplementation("androidx.test.ext:junit:1.1.5")
