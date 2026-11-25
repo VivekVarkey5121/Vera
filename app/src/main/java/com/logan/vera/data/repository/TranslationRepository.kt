@@ -9,8 +9,8 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class TranslationRepository(
-    sourceLanguage: String = TranslateLanguage.ENGLISH,
-    targetLanguage: String = TranslateLanguage.SPANISH
+    sourceLanguage: String = TranslateLanguage.SPANISH,
+    targetLanguage: String = TranslateLanguage.ENGLISH
 ) {
     private val translator = Translation.getClient(
         TranslatorOptions.Builder()

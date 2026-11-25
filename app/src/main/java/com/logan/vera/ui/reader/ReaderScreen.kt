@@ -1,7 +1,7 @@
 package com.logan.vera.ui.reader
 
 import android.app.Activity
-import android.view.View
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -10,21 +10,20 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
-import android.widget.Toast
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import com.logan.vera.utils.TimerLock // Matches your 'utils' folder
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -40,9 +39,11 @@ import com.logan.vera.data.models.ChapterModel
 import com.logan.vera.epub.utils.BookTextMapper
 import com.logan.vera.epub.utils.toAnnotatedString
 import com.logan.vera.ui.theme.ReaderTheme
+import com.logan.vera.utils.TimerLock
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(
     bookId: String,
@@ -51,13 +52,14 @@ fun ReaderScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
+    val translationState by viewModel.selectionTranslation.collectAsState()
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var isInitialized by remember { mutableStateOf(false) }
     var showBars by remember { mutableStateOf(true) }
-    var horizontalDragOffset by remember { mutableStateOf(0f) }  // for the chapter drag
+    var horizontalDragOffset by remember { mutableStateOf(0f) } // for the chapter drag
     val coverHeight = 300.dp
 
     // System UI controller
@@ -65,11 +67,11 @@ fun ReaderScreen(
     DisposableEffect(view) {
         val window = (view.context as Activity).window
         val controller = WindowCompat.getInsetsController(window, view)
-        
-        controller.systemBarsBehavior = 
+
+        controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.systemBars())
-        
+
         onDispose {
             controller.show(WindowInsetsCompat.Type.systemBars())
         }
@@ -88,18 +90,18 @@ fun ReaderScreen(
 
     // Save reading progress when scrolling (debounced)
     LaunchedEffect(listState) {
-        snapshotFlow { 
+        snapshotFlow {
             ReadingPosition(
                 chapterIndex = listState.firstVisibleItemIndex,
                 scrollOffset = with(density) { listState.firstVisibleItemScrollOffset.toDp().value }
             )
         }
-        .distinctUntilChanged()
-        .collect { position ->
-            if (isInitialized && position.chapterIndex >= 0) {
-                viewModel.saveReadingProgress(position)
+            .distinctUntilChanged()
+            .collect { position ->
+                if (isInitialized && position.chapterIndex >= 0) {
+                    viewModel.saveReadingProgress(position)
+                }
             }
-        }
     }
 
     // Back handler
@@ -114,34 +116,86 @@ fun ReaderScreen(
         }
     }
 
+    var selectionDismissKey by remember { mutableStateOf(0) }
+    var interceptedSelectionText by remember { mutableStateOf<String?>(null) }
+    var interceptNextCopy by remember { mutableStateOf(false) }
+    val androidClipboard = remember(view) {
+        view.context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+            as? android.content.ClipboardManager
+    }
+
+    val inMemoryClipboard = remember {
+        object : androidx.compose.ui.platform.ClipboardManager {
+            override fun getText(): androidx.compose.ui.text.AnnotatedString? {
+                return interceptedSelectionText?.let { androidx.compose.ui.text.AnnotatedString(it) }
+            }
+            override fun setText(annotatedString: androidx.compose.ui.text.AnnotatedString) {
+                interceptedSelectionText = annotatedString.text
+                if (!interceptNextCopy) {
+                    androidClipboard?.setPrimaryClip(
+                        android.content.ClipData.newPlainText("selected text", annotatedString.text)
+                    )
+                }
+            }
+            override fun hasText(): Boolean = !interceptedSelectionText.isNullOrEmpty()
+        }
+    }
+
+    val customToolbar = remember(view) {
+        TranslateTextToolbar(
+            view = view,
+            onTranslateClicked = { copyAction ->
+                interceptNextCopy = true
+                copyAction?.invoke()
+                interceptNextCopy = false
+                interceptedSelectionText
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(viewModel::translateSelection)
+                interceptedSelectionText = null
+                selectionDismissKey++
+            }
+        )
+    }
+
+    // Dismiss selection when scrolling
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) {
+            customToolbar.dismiss()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
+            .pointerInput(chapters.size, translationState != null) {
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        // Logic for when the finger is lifted
                         val threshold = 200 // How many pixels they must swipe to trigger a change
-                        
-                        if (horizontalDragOffset > threshold) {
-                            // Swiped Right (Go to Previous Chapter)
-                            val prevChapter = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0)
-                            coroutineScope.launch {
-                                listState.animateScrollToItem(prevChapter)
-                            }
-                        } else if (horizontalDragOffset < -threshold) {
-                            // Swiped Left (Go to Next Chapter)
-                            val nextChapter = (listState.firstVisibleItemIndex + 1).coerceAtMost(chapters.size - 1)
-                            coroutineScope.launch {
-                                listState.animateScrollToItem(nextChapter)
+
+                        if (translationState == null && chapters.isNotEmpty()) {
+                            if (horizontalDragOffset > threshold) {
+                                // Swiped Right (Go to Previous Chapter)
+                                val prevChapter = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0)
+                                coroutineScope.launch {
+                                    listState.animateScrollToItem(prevChapter)
+                                }
+                            } else if (horizontalDragOffset < -threshold) {
+                                // Swiped Left (Go to Next Chapter)
+                                val nextChapter = (listState.firstVisibleItemIndex + 1).coerceAtMost(chapters.size - 1)
+                                coroutineScope.launch {
+                                    listState.animateScrollToItem(nextChapter)
+                                }
                             }
                         }
-                        // Reset the tracker for the next time
                         horizontalDragOffset = 0f
                     },
                     onHorizontalDrag = { change, dragAmount ->
-                        change.consume() // Tell the system we are handling this touch
-                        horizontalDragOffset += dragAmount // Accumulate the movement
+                        if (translationState == null) {
+                            change.consume()
+                            horizontalDragOffset += dragAmount
+                        } else {
+                            horizontalDragOffset = 0f
+                        }
                     }
                 )
             }
@@ -159,8 +213,8 @@ fun ReaderScreen(
                             coroutineScope.launch {
                                 val position = ReadingPosition(
                                     chapterIndex = listState.firstVisibleItemIndex,
-                                    scrollOffset = with(density) { 
-                                        listState.firstVisibleItemScrollOffset.toDp().value 
+                                    scrollOffset = with(density) {
+                                        listState.firstVisibleItemScrollOffset.toDp().value
                                     }
                                 )
                                 viewModel.saveReadingProgress(position)
@@ -180,7 +234,6 @@ fun ReaderScreen(
                                 listState.animateScrollToItem(0)
                             }
                         }
-
                     )
                 }
             }
@@ -212,7 +265,7 @@ fun ReaderScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Focus Lock Active", 
+                            "Focus Lock Active",
                             style = MaterialTheme.typography.headlineMedium
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -238,59 +291,109 @@ fun ReaderScreen(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.error
                         )
-                    } ?: LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(uiState.theme.background),
-                        userScrollEnabled = true
+                    } ?: CompositionLocalProvider(
+                        androidx.compose.ui.platform.LocalTextToolbar provides customToolbar,
+                        androidx.compose.ui.platform.LocalClipboardManager provides inMemoryClipboard
                     ) {
-                        // Cover image
-                        item(key = "cover") {
-                            uiState.coverImage?.let { coverImageData ->
-                                Box(
+                        key(selectionDismissKey) {
+                            androidx.compose.foundation.text.selection.SelectionContainer(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                customToolbar.dismiss()
+                                                selectionDismissKey++
+                                                showBars = !showBars
+                                            }
+                                        )
+                                    }
+                            ) {
+                                LazyColumn(
+                                    state = listState,
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp)
+                                        .fillMaxSize()
+                                        .background(uiState.theme.background),
+                                    userScrollEnabled = true
                                 ) {
-                                    AsyncImage(
-                                        model = coverImageData,
-                                        contentDescription = "Book cover",
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(coverHeight),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                }
-                                HorizontalDivider()
-                            }
-                        }
+                                    // Cover image
+                                    item(key = "cover") {
+                                        uiState.coverImage?.let { coverImageData ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 16.dp)
+                                            ) {
+                                                AsyncImage(
+                                                    model = coverImageData,
+                                                    contentDescription = "Book cover",
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(coverHeight),
+                                                    contentScale = ContentScale.Fit
+                                                )
+                                            }
+                                            HorizontalDivider()
+                                        }
+                                    }
 
-                        // Chapters
-                        items(
-                            items = chapters,
-                            key = { it.index }
-                        ) { chapter ->
-                            ChapterContent(
-                                chapter = chapter,
-                                fontSize = uiState.fontSize,
-                                fontFamily = uiState.fontFamily,
-                                theme = uiState.theme,
-                                viewModel = viewModel,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                                    // Chapters
+                                    items(
+                                        items = chapters,
+                                        key = { it.index }
+                                    ) { chapter ->
+                                        ChapterContent(
+                                            chapter = chapter,
+                                            fontSize = uiState.fontSize,
+                                            fontFamily = uiState.fontFamily,
+                                            theme = uiState.theme,
+                                            viewModel = viewModel,
+                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                        )
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+
+        translationState?.let { state ->
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.dismissSelectionTranslation() }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = state.sourceText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    when {
+                        state.isLoading -> CircularProgressIndicator()
+                        state.error != null -> Text(
+                            text = state.error,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        state.translatedText != null -> Text(
+                            text = state.translatedText,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
     }
 }
-
-
 
 @Composable
 private fun ChapterContent(
@@ -315,11 +418,11 @@ private fun ChapterContent(
                 modifier = Modifier.padding(vertical = 16.dp)
             )
         }
-        
+
         val parts = remember(chapter.content) {
             chapter.content.split("<img")
         }
-        
+
         parts.forEachIndexed { index, part ->
             if (index == 0) {
                 Text(
@@ -334,7 +437,7 @@ private fun ChapterContent(
                 if (imgEndIndex != -1) {
                     val imgTag = part.substring(0, imgEndIndex + 2)
                     val text = part.substring(imgEndIndex + 2)
-                    
+
                     BookTextMapper.parseImgTag(imgTag)?.let { img ->
                         val imageData = viewModel.getImageData(img.path)
                         if (imageData != null) {
@@ -349,7 +452,7 @@ private fun ChapterContent(
                             )
                         }
                     }
-                    
+
                     if (text.isNotEmpty()) {
                         Text(
                             text = text.toAnnotatedString(),

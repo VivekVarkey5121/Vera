@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.logan.vera.data.models.ChapterModel
 import com.logan.vera.data.repository.BookRepository
+import com.logan.vera.data.repository.TranslationRepository
 import com.logan.vera.epub.parser.EpubParser
 import com.logan.vera.epub.utils.EpubImageData
 import com.logan.vera.ui.theme.Fonts
@@ -26,6 +27,7 @@ private const val TAG = "ReaderViewModel"
 class ReaderViewModel @Inject constructor(
     private val repository: BookRepository,
     private val preferencesManager: PreferencesManager,
+    private val translationRepository: TranslationRepository,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context, 
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -192,7 +194,38 @@ class ReaderViewModel @Inject constructor(
             }
         }
     }
+    private val _selectionTranslation = MutableStateFlow<SelectionTranslationState?>(null)
+    val selectionTranslation: StateFlow<SelectionTranslationState?> = _selectionTranslation.asStateFlow()
+
+    fun translateSelection(text: String) {
+        viewModelScope.launch {
+            _selectionTranslation.value = SelectionTranslationState(
+                sourceText = text,
+                isLoading = true
+            )
+            try {
+                val translated = translationRepository.translate(text)
+                _selectionTranslation.value = SelectionTranslationState(
+                    sourceText = text,
+                    translatedText = translated,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _selectionTranslation.value = SelectionTranslationState(
+                    sourceText = text,
+                    error = e.localizedMessage ?: "Translation failed",
+                    isLoading = false
+                )
+            }
+        }
+    }
+
+    fun dismissSelectionTranslation() {
+        _selectionTranslation.value = null
+    }
 }
+
+
 
 data class ReaderUiState(
     val title: String = "",
@@ -211,4 +244,11 @@ data class ReaderUiState(
 data class ReadingPosition(
     val chapterIndex: Int,
     val scrollOffset: Float
+)
+
+data class SelectionTranslationState(
+    val sourceText: String,
+    val translatedText: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )

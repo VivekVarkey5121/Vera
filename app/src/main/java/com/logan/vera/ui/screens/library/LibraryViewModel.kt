@@ -141,8 +141,14 @@ class LibraryViewModel @Inject constructor(
                         .setInputData(workDataOf("book_id" to id))
                         .build()
 
-                    WorkManager.getInstance(context).enqueue(request)                }
-
+                    WorkManager.getInstance(context).enqueue(request)
+                    val progressFlow: Flow<Float> = WorkManager.getInstance(context)
+                        .getWorkInfoByIdFlow(request.id)
+                        .filterNotNull()
+                        .map { workInfo ->
+                            workInfo.progress.getFloat(EpubTranslationWorker.KEY_PROGRESS, 0f)
+                        }
+                }
                 clearSelection()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to translate", e)

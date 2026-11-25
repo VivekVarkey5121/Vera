@@ -2,6 +2,7 @@ package com.logan.vera.epub.parser
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.logan.vera.data.database.entities.Book
 import com.logan.vera.data.models.ChapterModel
@@ -134,10 +135,17 @@ class EpubTranslator @Inject constructor(
                         data = translatedHtml.toByteArray(Charsets.UTF_8)
                     )
                     onProgress(index + 1, chapters.size)
+                    withContext(Dispatchers.Main) {   // DEBUG / WORKING PROGRESS / remove + remember to remove toast import when this is moved to ui
+                        Toast.makeText(
+                            context,
+                            "Translated ${index}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
 
 //                val translatedEpub = writeEpubToFile(
-//                    files = translatedFiles,
+
 //                    targetEpubFile = targetEpubFile
 //                )
 

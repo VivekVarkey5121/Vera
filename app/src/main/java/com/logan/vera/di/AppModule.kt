@@ -5,6 +5,7 @@ import com.logan.vera.data.database.AppDatabase
 import com.logan.vera.data.database.dao.BookDao
 import com.logan.vera.data.repository.BookCollectionRepository
 import com.logan.vera.data.repository.BookRepository
+import com.logan.vera.data.repository.TranslationRepository
 import com.logan.vera.utils.PreferencesManager
 import dagger.Module
 import dagger.Provides
@@ -49,5 +50,11 @@ object AppModule {
     @Singleton
     fun providePreferencesManager(@ApplicationContext context: Context): PreferencesManager {
         return PreferencesManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTranslationRepository(): TranslationRepository {
+        return TranslationRepository()
     }
 }
